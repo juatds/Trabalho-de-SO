@@ -106,10 +106,37 @@ class GerenciadorMemoria:
         return endereco_fisico
 
     def tratar_falta_pagina(self, numero_processo, numero_pagina):
+        # Obtém a tabela de páginas associada ao processo
+        tabela_paginas = self.tabela_paginas.get(numero_processo)
+    
+        if tabela_paginas is None:
+            print(f"Processo {numero_processo} não possui tabela de páginas.")
+            return
+    
+        # Lógica para escolher um quadro livre na memória principal
+        # (Essa parte pode variar dependendo do algoritmo de substituição utilizado)
+        quadro_livre = self.encontrar_quadro_livre()
+    
+        if quadro_livre is not None:
+            # Carrega a página da memória secundária para o quadro livre na memória principal
+            tabela_paginas.carregar_pagina(numero_pagina, quadro_livre)
+            print(f"Página {numero_pagina} do Processo {numero_processo} carregada no Quadro {quadro_livre}.")
+    
+            # Lógica adicional, se necessário (por exemplo, gravação da página de volta ao disco se ela foi modificada)
+            # ...
+    
+        else:
+            print("Não há quadros livres na memória principal. Aplicar algoritmo de substituição de página.")
+            # Lógica para aplicar o algoritmo de substituição de página (por exemplo, LRU)
+            # ...
 
-        # Lógica para trazer a página da memória secundária para a memória principal
-        # ...
-
+    def encontrar_quadro_livre(self):
+        # Encontrar o primeiro quadro livre na memória principal
+        for i, quadro in enumerate(self.memoria_principal.quadros):
+            if quadro is None:
+                return i  # Retorna o índice do quadro livre
+        return None  # Retorna None se não houver quadros livres
+        
     def busca_ms(self,numero_processo, endereco):
 
         # Lógica para execução de operações de leitura na mp
