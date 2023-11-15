@@ -80,19 +80,26 @@ class GerenciadorMemoria:
         self.tabelas_paginas[numero_processo] = tabela_paginas
 
     def busca_mp(self, numero_processo, endereco):
-
+        
+        #obtem a tabela de paginas associada ao processo
         tabela_paginas = self.tabela_paginas.get(numero_processo)
 
         if tabela_paginas is None:
             print(f"Processo {numero_processo} não existe.")
             return None
-
+            
+        #calcula o numero da pagina com base no endereço virtual
         numero_pagina = endereco // tabela_paginas.tamanho_pagina
+        
+        #obtem a pagina correspondente na tabela
         pagina = tabela_paginas.mapear_pagina(endereco)
 
         if pagina is None or not pagina.presente:
+            
+            #trata a falta de pagina, chamando o método correspondente
             self.tratar_falta_pagina(numero_processo, numero_pagina)
-
+            
+        #obtem o numero do quadro e o endereço fisico
         numero_quadro = pagina.numero_quadro
         endereco_fisico = numero_quadro * tabela_paginas.tamanho_pagina + (endereco % tabela_paginas.tamanho_pagina)
 
