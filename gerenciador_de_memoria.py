@@ -81,8 +81,22 @@ class GerenciadorMemoria:
 
     def busca_mp(self, numero_processo, endereco):
 
-        # Lógica para execução de operações de leitura na mp
-        # ...
+        tabela_paginas = self.tabela_paginas.get(numero_processo)
+
+        if tabela_paginas is None:
+            print(f"Processo {numero_processo} não existe.")
+            return None
+
+        numero_pagina = endereco // tabela_paginas.tamanho_pagina
+        pagina = tabela_paginas.mapear_pagina(endereco)
+
+        if pagina is None or not pagina.presente:
+            self.tratar_falta_pagina(numero_processo, numero_pagina)
+
+        numero_quadro = pagina.numero_quadro
+        endereco_fisico = numero_quadro * tabela_paginas.tamanho_pagina + (endereco % tabela_paginas.tamanho_pagina)
+
+        return endereco_fisico
 
     def tratar_falta_pagina(self, numero_processo, numero_pagina):
 
