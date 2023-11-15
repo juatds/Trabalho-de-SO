@@ -61,6 +61,11 @@ class GerenciadorMemoria:
         self.tabelas_paginas = {}
         self.lru = []
 
+    def atualiza_lru(self, numero_quadro):
+        if self.lru.count(numero_quadro) == 1:
+            self.lru.remove(numero_quadro)
+        self.lru.append(numero_quadro)
+
     def criar_processo(self, numero_processo, tamanho_imagem):
         tabela_paginas = TabelaPaginas(tamanho_pagina=self.mp.tamanho_quadro)
         quantidade_de_paginas = tamanho_imagem // self.mp.tamanho_quadro
@@ -73,10 +78,12 @@ class GerenciadorMemoria:
             if quadros_livres < quantidade_de_paginas:
                 for i, k in enumerate(range(self.mp.quantidade_quadros - quadros_livres, self.mp.quantidade_quadros)):
                     self.mp.quadros[k] = paginas[i]
+                    self.atualiza_lru(k)
                     tabela_paginas.carregar_pagina(i, k)
             else:
                 for i, k in enumerate(range(self.mp.quantidade_quadros - quadros_livres, self.mp.quantidade_quadros - quadros_livres + quantidade_de_paginas)):
                     self.mp.quadros[k] = paginas[i]
+                    self.atualiza_lru(k)
                     tabela_paginas.carregar_pagina(i, k)
         self.tabelas_paginas[numero_processo] = tabela_paginas
 
@@ -100,6 +107,8 @@ class GerenciadorMemoria:
             # obtem a endereco_quadro correspondente na nova tabela
             endereco_quadro = tabela_paginas.mapear_pagina(endereco)
 
+        self.atualiza_lru(endereco_quadro.numero_quadro)
+
         # obtem a pagina apartir do endereco_quadro
         pagina = self.mp.quadros[endereco_quadro.numero_quadro]
 
@@ -108,16 +117,14 @@ class GerenciadorMemoria:
         return pagina.infos[ofset]
 
     def tratar_falta_pagina(self, numero_processo, numero_pagina):
-        # Obtém a tabela de páginas associada ao processo
-        tabela_paginas = self.tabela_paginas.get(numero_processo)
 
-        if tabela_paginas is None:
-            print(f"Processo {numero_processo} não possui tabela de páginas.")
-            return
+        # Obtém a tabela de páginas associada ao processo
+        tabela_paginas = self.tabelas_paginas.get(numero_processo)
+
 
         # Lógica para escolher um quadro livre na memória principal
         # (Essa parte pode variar dependendo do algoritmo de substituição utilizado)
-        quadro_livre = self.encontrar_quadro_livre()
+        quadro_livre = self.quadros_livres()
 
         if quadro_livre is not None:
             # Carrega a página da memória secundária para o quadro livre na memória principal
@@ -132,52 +139,13 @@ class GerenciadorMemoria:
             # Lógica para aplicar o algoritmo de substituição de página (por exemplo, LRU)
             # ...
 
-    def encontrar_quadro_livre(self):
-        # Encontrar o primeiro quadro livre na memória principal
-        for i, quadro in enumerate(self.memoria_principal.quadros):
-            if quadro is None:
-                return i  # Retorna o índice do quadro livre
-        return None  # Retorna None se não houver quadros livres
-
-
-    def busca_ms(self, numero_processo, endereco):
-        # Obtém a tabela de páginas associada ao processo
-        tabela_paginas = self.tabela_paginas.get(numero_processo)
-    
-        if tabela_paginas is None:
-            print(f"Processo {numero_processo} não possui tabela de páginas.")
-            return None
-    
-        # Calcula o número da página com base no endereço virtual
-        numero_pagina = endereco // tabela_paginas.tamanho_pagina
-        # Obtém a página correspondente na tabela
-        pagina = tabela_paginas.mapear_pagina(endereco)
-    
-        if pagina is None:
-            print(f"Página {numero_pagina} não está mapeada para o processo {numero_processo}.")
-            return None
-    
-        if not pagina.presente:
-            print(f"Página {numero_pagina} não está na memória principal. Realizando busca na memória secundária.")
-    
-            # Lógica para buscar a página na memória secundária (por exemplo, carregar do disco)
-            # ...
-    
-            # Atualiza a tabela de páginas indicando que a página está presente
-            tabela_paginas.carregar_pagina(numero_pagina, numero_quadro)
-            print(f"Página {numero_pagina} do Processo {numero_processo} carregada na memória principal.")
-        
-        # Obtém o número do quadro e o endereço físico
-        numero_quadro = pagina.numero_quadro
-        endereco_fisico = numero_quadro * tabela_paginas.tamanho_pagina + (endereco % tabela_paginas.tamanho_pagina)
-    
-        return endereco_fisico
-        
-
 
 def trabalho_so():
     GM = GerenciadorMemoria(32768, 1024, 16)
-    
+    GM.criar_processo(1, 512)
+    GM.criar_processo(2, 1024)
+    info = GM.busca_mp(2, 426)
+    print(info)
     # Leitura do arquivo com lista de execução e chamada das funções do GM segundo a instrução solicitada
     # ...
 
