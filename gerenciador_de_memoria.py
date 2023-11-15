@@ -60,11 +60,15 @@ class GerenciadorMemoria:
         self.mp = MemoriaPrincipal(tamanho_memoria, tamanho_pagina)
         self.tabelas_paginas = {}
         self.lru = []
+        self.aux = []
 
-    def atualiza_lru(self, numero_quadro):
+    def atualiza_lru(self, numero_quadro, numero_processo):
         if self.lru.count(numero_quadro) == 1:
+            aux = self.lru.index(numero_quadro)
+            self.aux.pop(aux)
             self.lru.remove(numero_quadro)
         self.lru.append(numero_quadro)
+        self.aux.append(numero_processo)
 
     def criar_processo(self, numero_processo, tamanho_imagem):
         tabela_paginas = TabelaPaginas(tamanho_pagina=self.mp.tamanho_quadro)
@@ -78,12 +82,12 @@ class GerenciadorMemoria:
             if quadros_livres < quantidade_de_paginas:
                 for i, k in enumerate(range(self.mp.quantidade_quadros - quadros_livres, self.mp.quantidade_quadros)):
                     self.mp.quadros[k] = paginas[i]
-                    self.atualiza_lru(k)
+                    self.atualiza_lru(k, numero_processo)
                     tabela_paginas.carregar_pagina(i, k)
             else:
                 for i, k in enumerate(range(self.mp.quantidade_quadros - quadros_livres, self.mp.quantidade_quadros - quadros_livres + quantidade_de_paginas)):
                     self.mp.quadros[k] = paginas[i]
-                    self.atualiza_lru(k)
+                    self.atualiza_lru(k, numero_processo)
                     tabela_paginas.carregar_pagina(i, k)
         self.tabelas_paginas[numero_processo] = tabela_paginas
 
@@ -107,7 +111,7 @@ class GerenciadorMemoria:
             # obtem a endereco_quadro correspondente na nova tabela
             endereco_quadro = tabela_paginas.mapear_pagina(endereco)
 
-        self.atualiza_lru(endereco_quadro.numero_quadro)
+        self.atualiza_lru(endereco_quadro.numero_quadro, numero_processo)
 
         # obtem a pagina apartir do endereco_quadro
         pagina = self.mp.quadros[endereco_quadro.numero_quadro]
