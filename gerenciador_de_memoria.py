@@ -140,6 +140,41 @@ class GerenciadorMemoria:
         return None  # Retorna None se não houver quadros livres
 
 
+    def busca_ms(self, numero_processo, endereco):
+        # Obtém a tabela de páginas associada ao processo
+        tabela_paginas = self.tabela_paginas.get(numero_processo)
+    
+        if tabela_paginas is None:
+            print(f"Processo {numero_processo} não possui tabela de páginas.")
+            return None
+    
+        # Calcula o número da página com base no endereço virtual
+        numero_pagina = endereco // tabela_paginas.tamanho_pagina
+        # Obtém a página correspondente na tabela
+        pagina = tabela_paginas.mapear_pagina(endereco)
+    
+        if pagina is None:
+            print(f"Página {numero_pagina} não está mapeada para o processo {numero_processo}.")
+            return None
+    
+        if not pagina.presente:
+            print(f"Página {numero_pagina} não está na memória principal. Realizando busca na memória secundária.")
+    
+            # Lógica para buscar a página na memória secundária (por exemplo, carregar do disco)
+            # ...
+    
+            # Atualiza a tabela de páginas indicando que a página está presente
+            tabela_paginas.carregar_pagina(numero_pagina, numero_quadro)
+            print(f"Página {numero_pagina} do Processo {numero_processo} carregada na memória principal.")
+        
+        # Obtém o número do quadro e o endereço físico
+        numero_quadro = pagina.numero_quadro
+        endereco_fisico = numero_quadro * tabela_paginas.tamanho_pagina + (endereco % tabela_paginas.tamanho_pagina)
+    
+        return endereco_fisico
+        
+
+
 def trabalho_so():
     GM = GerenciadorMemoria(32768, 1024, 16)
     
