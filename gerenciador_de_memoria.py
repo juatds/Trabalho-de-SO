@@ -134,7 +134,7 @@ class GerenciadorMemoria:
 
         numero_quadro_retirado = self.lru.pop(0)
         processo_quadro_retirado = self.aux.pop(0)
-
+        
         tabela_pagina_quadro_retirado = self.tabelas_paginas[processo_quadro_retirado]
 
         verificador_modificacao, numero_pagina_retirado = tabela_pagina_quadro_retirado.verificador_modificacao(numero_quadro_retirado)
@@ -164,10 +164,11 @@ class GerenciadorMemoria:
         # obtem a endereco_quadro correspondente na tabela
         endereco_quadro = tabela_paginas.mapear_pagina(endereco)
 
+        # calcula o numero da pagina com base no endereço virtual
+        numero_pagina = endereco // tabela_paginas.tamanho_pagina
+
         # trata a falta de endereco_quadro, chamando o método correspondente
         if endereco_quadro is None:
-            # calcula o numero da pagina com base no endereço virtual
-            numero_pagina = endereco // tabela_paginas.tamanho_pagina
             self.tratar_falta_pagina(numero_processo, numero_pagina)
 
             # obtem a tabela de paginas atualizada
@@ -184,12 +185,46 @@ class GerenciadorMemoria:
         # obtem a informação apartir do ofset
         ofset = endereco % tabela_paginas.tamanho_pagina
         pagina.infos[ofset] = valor
+        tabela_paginas[numero_pagina].modificada = True
+
         
     def termina_processo(self, numero_processo):
-        # Logica terminar processo
+
+        # Lógica para terminar o processo
+        tabela_pagina = self.tabelas_paginas.get(numero_processo)
+
+        if tabela_pagina is not None:
+            for numero_pagina, info_pagina in tabela_pagina.paginas.items():
+                if info_pagina.presente:
+                    numero_quadro = info_pagina.numero_quadro
+                    # Lógica adicional: liberar quadro na memória principal
+                    self.mp.quadros[numero_quadro] = None
+                    print(f"Liberando Quadro {numero_quadro} associado à Página {numero_pagina} do Processo {numero_processo}.")
+
+            # Remover a tabela de páginas do processo terminado
+            del self.tabelas_paginas[numero_processo]
+            # Remover o processo da ms
+            del self.ms.processos[numero_processo]
+
+            print(f"Processo {numero_processo} terminado.")
+        else:
+            print(f"Processo {numero_processo} não encontrado.")
 
     def carregar_ms(self, numero_processo):
         # Logica verificar modicicacao e atualizar na ms
+        tabela_pagina = self.tabelas_paginas.get(numero_processo)
+        if tabela_pagina is not None:
+            for numero_pagina, info_pagina in tabela_pagina.paginas.items():
+                if info_pagina.presente and info_pagina.modificada:
+                    numero_quadro = info_pagina.numero_quadro
+                    # Lógica adicional: atualizar na memória secundária
+                    pagina = self.mp.quadros[numero_quadro]
+                    self.ms.atualizar_pagina(numero_processo, numero_pagina, pagina)
+                    print(f"Atualizando Página {numero_pagina} do Processo {numero_processo} na Memória Secundária.")
+
+                    # Marcar a página como não modificada após a atualização
+                    info_pagina.modificada = False
+
 
 
 
@@ -234,3 +269,4 @@ def trabalho_so():
 
 if __name__ == "__main__":
     trabalho_so()
+
