@@ -252,11 +252,11 @@ def trabalho_so():
                 tamanho_processo = int(vet[2])
                 tipo = vet[3]
                 if tipo == 'KB':
-                    GM.criar_processo(numero_processo, tamanho_processo)
+                    GM.criar_processo(numero_processo, tamanho_processo * (2 ** 10))
                 elif tipo == 'MB':
-                    GM.criar_processo(numero_processo, tamanho_processo)
+                    GM.criar_processo(numero_processo, tamanho_processo * (2 ** 20))
                 elif tipo == 'GB':
-                    GM.criar_processo(numero_processo, tamanho_processo)
+                    GM.criar_processo(numero_processo, tamanho_processo * (2 ** 30))
             elif comando == 'P':
                 endereco_logico = int(vet[2][1:-2])
                 info = GM.busca_mp(numero_processo, endereco_logico)
