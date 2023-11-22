@@ -1,0 +1,13 @@
+P1 C 64 TMP
+P1 W (0)2 30
+P1 R (0)2
+P1 R (2)2
+P7 C 128 TMP
+P7 W (5)2 90
+P7 R (5)2
+P1 I disco
+P3 C 64 TMP
+P3 R (8)2
+P7 P (3)2
+P7 T
+P1 R (0)2
