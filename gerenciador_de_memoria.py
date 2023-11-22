@@ -1,8 +1,11 @@
+import random
+
+
 class Pagina:
     def __init__(self, tamanho_pagina):
         self.infos = [None] * tamanho_pagina
         for i in range(tamanho_pagina):
-            self.infos[i] = i
+            self.infos[i] = random.randint(0, 100)
 
 
 class InfoTabela:
@@ -30,10 +33,21 @@ class TabelaPaginas:
         self.info_paginas[numero_pagina].presente = True
         self.info_paginas[numero_pagina].numero_quadro = numero_quadro
 
-    def verificador_modificacao(self, numero_quadro):
+    def verificador_info(self, numero_quadro):
         for numero_pagina, info_pagina in self.info_paginas.items():
             if info_pagina.numero_quadro == numero_quadro:
-                return info_pagina.modificada, numero_pagina
+                return info_pagina, numero_pagina
+            
+    def escrever_tabela(self):
+        print("Tabela de Paginas:")
+        for p, i in self.info_paginas.items():
+            print(f"{p} - Presente: {i.presente} - Modificação: {i.modificada}", end=' ')
+            if i.presente:
+                print(f"- Quadro: {i.numero_quadro}")
+            else:
+                print(f"- Quadro: X")
+        print("--------------------")
+
 
 
 class MemoriaPrincipal:
@@ -49,6 +63,31 @@ class MemoriaPrincipal:
         for i in range(self.quantidade_quadros):
             if self.quadros[i] is None:
                 return self.quantidade_quadros - i
+            
+    def imprime_quadros(self):
+        print("Memoria Principal:")
+        for i in range(self.quantidade_quadros):
+            if self.quadros[i] is not None:
+                #vermelho:
+                print("\033[F\033[1;31m[]\033[0m", end=" ")
+            else:
+                #verde:
+                print("\033[Fs\033[1;32m[]\033[0m", end=" ")
+        print()
+
+    def imprime_quadro_lru(self, quadro):
+        print("Memoria Principal:")
+        for i in range(self.quantidade_quadros):
+            if i == quadro:
+                #amarelo:
+                print("\033[F\033[1;33m[]\033[0m", end=" ")
+            elif self.quadros[i] is not None:
+                #vermelho:
+                print("\033[F\033[1;31m[]\033[0m", end=" ")
+            else:
+                #verde:
+                print("\033[Fs\033[1;32m[]\033[0m", end=" ")
+        print()
 
 
 class MemoriaSecundaria:
@@ -69,6 +108,24 @@ class MemoriaSecundaria:
         paginas[numero_pagina] = pagina
         self.carregar_paginas(paginas, numero_processo)
 
+    def escrever_processos(self):
+        print("Memoria Secundaria:")
+        for p in self.processos.keys():
+            print(f"P{p}")
+        print("--------------------")
+
+    def escrever_processo(self, numero_processo, numero_pagina):
+        print(f"Memoria Secundaria - P{numero_processo}:")
+        for i in range(self.processos[numero_processo]):
+            if i == numero_pagina:
+                #amarelo:
+                print("\033[F\033[1;33m[]\033[0m", end=" ")
+            else:
+                #vermelho:
+                print("\033[F\033[1;31m[]\033[0m", end=" ")
+        print()
+        print("--------------------")
+
 
 class GerenciadorMemoria:
     def __init__(self, tamanho_ms, tamanho_memoria, tamanho_pagina):
@@ -79,6 +136,7 @@ class GerenciadorMemoria:
         self.aux = []
 
     def atualiza_lru(self, numero_quadro, numero_processo):
+        print("Atualizando LRU")
         if self.lru.count(numero_quadro) == 1:
             aux = self.lru.index(numero_quadro)
             self.aux.pop(aux)
@@ -87,25 +145,39 @@ class GerenciadorMemoria:
         self.aux.append(numero_processo)
 
     def criar_processo(self, numero_processo, tamanho_imagem):
+        print("Crinado tabela de paginas")
         tabela_paginas = TabelaPaginas(tamanho_pagina=self.mp.tamanho_quadro, tamanho_processo=tamanho_imagem)
+        tabela_paginas.escrever_tabela()
         quantidade_de_paginas = tamanho_imagem // self.mp.tamanho_quadro
         paginas = [None] * quantidade_de_paginas
         for i in range(quantidade_de_paginas):
             paginas[i] = Pagina(self.mp.tamanho_quadro)
+        print("Carregando processo em Memoria Secundaria")
         self.ms.carregar_paginas(paginas, numero_processo)
+        self.ms.escrever_processos()
+        print("Verificando espaço livre em Memoria Principal")
+        self.mp.imprime_quadros()
         quadros_livres = self.mp.quadros_livres()
         if quadros_livres != 0:
+            i = 0
             if quadros_livres < quantidade_de_paginas:
-                for i, k in enumerate(range(self.mp.quantidade_quadros - quadros_livres, self.mp.quantidade_quadros)):
-                    self.mp.quadros[k] = paginas[i]
-                    self.atualiza_lru(k, numero_processo)
-                    tabela_paginas.carregar_pagina(i, k)
+                for k in range(self.mp.quantidade_quadros):
+                    if self.mp.quadros[k] is None:
+                        self.mp.quadros[k] = paginas[i]
+                        self.atualiza_lru(k, numero_processo)
+                        tabela_paginas.carregar_pagina(i, k)
+                        i += 1
             else:
-                for i, k in enumerate(range(self.mp.quantidade_quadros - quadros_livres,
-                                            self.mp.quantidade_quadros - quadros_livres + quantidade_de_paginas)):
-                    self.mp.quadros[k] = paginas[i]
-                    self.atualiza_lru(k, numero_processo)
-                    tabela_paginas.carregar_pagina(i, k)
+                k = 0
+                while i < quantidade_de_paginas:
+                    if self.mp.quadros[k] is None:
+                        self.mp.quadros[k] = paginas[i]
+                        self.atualiza_lru(k, numero_processo)
+                        tabela_paginas.carregar_pagina(i, k)
+                        i += 1
+                    k += 1
+            self.mp.imprime_quadros()
+            tabela_paginas.escrever_tabela()
         self.tabelas_paginas[numero_processo] = tabela_paginas
 
     def busca_mp(self, numero_processo, endereco):
@@ -116,8 +188,15 @@ class GerenciadorMemoria:
         # obtem a info_pagina correspondente na tabela
         info_pagina = tabela_paginas.mapear_pagina(endereco)
 
+        print("Verificando em qual quadro a pagina correspondente se encontra:")
+        tabela_paginas.escrever_tabela()
+        print(f"{endereco // tabela_paginas.tamanho_pagina} - Presente: {info_pagina.presente} - Modificação: {info_pagina.modificada} - Quadro: {info_pagina.numero_quadro}")
+
         # trata a falta de info_pagina, chamando o método correspondente
         if not info_pagina.presente:
+
+            print("Tratando falta de pagina")
+
             # calcula o numero da pagina com base no endereço virtual
             numero_pagina = endereco // tabela_paginas.tamanho_pagina
             self.tratar_falta_pagina(numero_processo, numero_pagina)
@@ -130,8 +209,15 @@ class GerenciadorMemoria:
 
         self.atualiza_lru(info_pagina.numero_quadro, numero_processo)
 
+        print("Buscando pagina do quadro em memoria principal:")
+        self.mp.imprime_quadro_lru(info_pagina.numero_quadro)
+
         # obtem a pagina apartir do info_pagina
         pagina = self.mp.quadros[info_pagina.numero_quadro]
+
+        for i in pagina.infos:
+            print(i, end=" ")
+        print()
 
         # obtem a informação apartir do ofset
         ofset = endereco % tabela_paginas.tamanho_pagina
@@ -142,25 +228,43 @@ class GerenciadorMemoria:
         numero_quadro_retirado = self.lru.pop(0)
         processo_quadro_retirado = self.aux.pop(0)
 
+        print(f"Quadro não utilizado a mais tempo:")
+
+        self.mp.imprime_quadro_lru(numero_quadro_retirado)
+
         tabela_pagina_quadro_retirado = self.tabelas_paginas.get(processo_quadro_retirado)
 
         if tabela_pagina_quadro_retirado is not None:
-            verificador_modificacao, numero_pagina_retirado = tabela_pagina_quadro_retirado.verificador_modificacao(
+            print("Verificando se o quadro sofreu modificação")
+            info, numero_pagina_retirado = tabela_pagina_quadro_retirado.verificador_info(
                 numero_quadro_retirado)
+            
+            print(f"{numero_pagina_retirado} - Presente: {info.presente} - Modificação: {info.modificada} - Quadro: {info.numero_quadro}")
 
-            if verificador_modificacao:
+            if info.modificada:
                 pagina_retirada = self.mp.quadros[numero_quadro_retirado]
 
+                print("Atualiza a pagina na Memoria Secundaria")
+
                 self.ms.atualiza_pagina(processo_quadro_retirado, numero_pagina_retirado, pagina_retirada)
+        else:
+            print("Quadro vazio")
 
         # Obtém a tabela de páginas associada ao processo
         tabela_paginas = self.tabelas_paginas.get(numero_processo)
+
+        print("Buscando pagina da Memoria Secundaria")
+
+        self.ms.escrever_processo(numero_processo, numero_pagina)
 
         nova_pagina = self.ms.mapear_pagina(numero_processo, numero_pagina)
 
         self.mp.quadros[numero_quadro_retirado] = nova_pagina
 
         tabela_paginas.carregar_pagina(numero_pagina, numero_quadro_retirado)
+
+        print("Atualiza Memoria principal e tabela de paginas")
+        tabela_paginas.escrever_tabela()
 
         self.tabelas_paginas[numero_processo] = tabela_paginas
 
@@ -176,8 +280,15 @@ class GerenciadorMemoria:
         # calcula o numero da pagina com base no endereço virtual
         numero_pagina = endereco // tabela_paginas.tamanho_pagina
 
+        print("Verificando em qual quadro a pagina correspondente se encontra:")
+        tabela_paginas.escrever_tabela()
+        print(f"{numero_pagina} - Presente: {info_pagina.presente} - Modificação: {info_pagina.modificada} - Quadro: {info_pagina.numero_quadro}")
+
+
         # trata a falta de info_pagina, chamando o método correspondente
         if not info_pagina.presente:
+            print("Tratando falta de pagina")
+
             self.tratar_falta_pagina(numero_processo, numero_pagina)
 
             # obtem a tabela de paginas atualizada
@@ -188,14 +299,29 @@ class GerenciadorMemoria:
 
         self.atualiza_lru(info_pagina.numero_quadro, numero_processo)
 
+        print("Buscando pagina do quadro em memoria principal:")
+        self.mp.imprime_quadro_lru(info_pagina.numero_quadro)
+
         # obtem a pagina apartir do info_pagina
         pagina = self.mp.quadros[info_pagina.numero_quadro]
+
+        for i in pagina.infos:
+            print(i, end=" ")
+        print()
 
         # obtem a informação apartir do ofset
         ofset = endereco % tabela_paginas.tamanho_pagina
         pagina.infos[ofset] = valor
+
+        print("Escrevendo valor na pagina")
+
+        for i in pagina.infos:
+            print(i, end=" ")
+        print()
+
         self.mp.quadros[info_pagina.numero_quadro] = pagina
         tabela_paginas.info_paginas[numero_pagina].modificada = True
+        print("Atualizando quadro em memoria principal e info na tabela de paginas para modificado")
         self.tabelas_paginas[numero_processo] = tabela_paginas
 
     def termina_processo(self, numero_processo):
@@ -203,7 +329,7 @@ class GerenciadorMemoria:
         # Lógica para terminar o processo
         tabela_paginas = self.tabelas_paginas.get(numero_processo)
 
-        for numero_pagina, info_pagina in tabela_paginas.info_paginas.items():
+        for info_pagina in tabela_paginas.info_paginas.values():
             if info_pagina.presente:
                 if self.lru.count(info_pagina.numero_quadro) == 1:
                     aux = self.lru.index(info_pagina.numero_quadro)
@@ -211,16 +337,25 @@ class GerenciadorMemoria:
                     self.lru.remove(info_pagina.numero_quadro)
                 self.lru.insert(0, info_pagina.numero_quadro)
                 self.aux.insert(0, numero_processo)
+                
+                self.mp.quadros[info_pagina.numero_quadro] = None
 
+        print("Liberando espaço em memoria principal")
+        self.mp.imprime_quadros()
         # Remover a tabela de páginas do processo terminado
         del self.tabelas_paginas[numero_processo]
         # Remover o processo da ms
         del self.ms.processos[numero_processo]
+        
+        print("Deletando tabela de paginas e processo da memoria secundaria")
+        self.ms.escrever_processos()
 
     def carregar_ms(self, numero_processo):
         # Logica verificar modicicacao e atualizar na ms
-        tabela_paginas = self.tabelas_paginas.get(numero_processo)
 
+        print("Fazendo o swapping para comunicação por microprocessador dedicado")
+        tabela_paginas = self.tabelas_paginas.get(numero_processo)
+        print("Atualizando informações da tabela e liberando espaço em memoria principal")
         for numero_pagina, info_pagina in tabela_paginas.info_paginas.items():
             if info_pagina.presente:
                 if info_pagina.modificada:
@@ -233,6 +368,10 @@ class GerenciadorMemoria:
                 self.lru.insert(0, info_pagina.numero_quadro)
                 self.aux.insert(0, numero_processo)
                 info_pagina.presente = False
+
+                self.mp.quadros[info_pagina.numero_quadro] = None
+        tabela_paginas.escrever_tabela()
+        self.mp.imprime_quadros()
 
         self.tabelas_paginas[numero_processo] = tabela_paginas
 
@@ -251,6 +390,7 @@ def trabalho_so():
             if comando == 'C':
                 tamanho_processo = int(vet[2])
                 tipo = vet[3]
+                print(f"Criando processo {vet[0]} de {vet[2]} {vet[3]}")
                 if tipo == 'KB':
                     GM.criar_processo(numero_processo, tamanho_processo * (2 ** 10))
                 elif tipo == 'MB':
@@ -259,20 +399,25 @@ def trabalho_so():
                     GM.criar_processo(numero_processo, tamanho_processo * (2 ** 30))
             elif comando == 'P':
                 endereco_logico = int(vet[2][1:-2])
+                print(f"Buscando instrução do processo {vet[0]} no endereço {endereco_logico}")
                 info = GM.busca_mp(numero_processo, endereco_logico)
-                print(f"Instrução sob a informação {info}")
+                print(f"Executando instrução {info}")
             elif comando == 'R':
                 endereco_logico = int(vet[2][1:-2])
+                print(f"Buscando informação do processo {vet[0]} no endereço {endereco_logico}")
                 info = GM.busca_mp(numero_processo, endereco_logico)
-                print(f"Leitura da informação do endereço lógico {endereco_logico}: {info}")
+                print(f"Informação: {info}")
             elif comando == 'W':
                 endereco_logico = int(vet[2][1:-2])
                 valor = int(vet[3])
+                print(f"Escrevendo {valor} no endereço {endereco_logico} do processo {vet[0]}")
                 GM.escreve_mp(numero_processo, endereco_logico, valor)
             elif comando == 'I':
                 dispositivo = vet[2]
+                print(f"Processo {vet[0]} comunicando com {dispositivo}")
                 GM.carregar_ms(numero_processo)
             elif comando == 'T':
+                print(f"Encerrando processo {vet[0]}")
                 GM.termina_processo(numero_processo)
 
 
