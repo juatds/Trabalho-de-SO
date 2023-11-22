@@ -400,6 +400,8 @@ def trabalho_so():
                     GM.criar_processo(numero_processo, tamanho_processo * (2 ** 20))
                 elif tipo == 'GB':
                     GM.criar_processo(numero_processo, tamanho_processo * (2 ** 30))
+                elif tipo == 'TMP':
+                    GM.criar_processo(numero_processo, tamanho_processo)
             elif comando == 'P':
                 endereco_logico = int(vet[2][1:-2])
                 print(f"Buscando instrução do processo {vet[0]} no endereço {endereco_logico}")
