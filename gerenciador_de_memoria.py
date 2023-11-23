@@ -58,11 +58,11 @@ class MemoriaPrincipal:
         self.quadros = [None] * self.quantidade_quadros
 
     def quadros_livres(self):
-        if self.quadros[-1] is not None:
-            return 0
+        qnt = 0
         for i in range(self.quantidade_quadros):
             if self.quadros[i] is None:
-                return self.quantidade_quadros - i
+                qnt += 1
+        return qnt
 
     def imprime_quadros(self):
         print()
@@ -389,7 +389,7 @@ class GerenciadorMemoria:
 def trabalho_so():
     # Leitura do arquivo com a lista de execução
     GM = GerenciadorMemoria(32768, 1024, 16)
-    with open('arquivo_de_entrada', 'r') as arquivo:
+    with open('arquivo_de_entrada.txt', 'r') as arquivo:
         for linha in arquivo:
             # Split da linha
             vet = linha.split()
@@ -411,7 +411,7 @@ def trabalho_so():
                     GM.criar_processo(numero_processo, tamanho_processo * (2 ** 20))
                 elif tipo == 'GB':
                     GM.criar_processo(numero_processo, tamanho_processo * (2 ** 30))
-                elif tipo == 'TMP':
+                elif tipo == 'B':
                     GM.criar_processo(numero_processo, tamanho_processo)
             elif comando == 'P':
                 endereco_logico = int(vet[2][1:-2])
